@@ -29,5 +29,6 @@ export async function SQL__truncate(table) {
 }
 
 export async function SQL__query(query) {
-  await sqlite.execute(query);
+  const data = await sqlite.execute(query);
+  return data;
 }
