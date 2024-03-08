@@ -22,15 +22,76 @@ Example code about how to usage Nativescript Sqlite (NS 8 or newer)
 5. For details, you can look at the [sql_helper.js](https://github.com/dyazincahya/example-code-sqlite-nativescript/blob/main/sql_helper.js) file directly
 
 ## Sample Code
+
+#### TABLE
+Assummed I have a **user** table like this :
+``` sql
+CREATE TABLE "users" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"fullname"	TEXT NOT NULL,
+	"about"	TEXT DEFAULT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+)
+```
+
+#### CREATE new USER
+``` sql
+SQL__insert(tableName, data)
+```
+I want to create new user with fullname is Kang Cahya and about is Designer
 ``` javascript
 import { SQL__insert } from "~/sql_helper";
 
 try {
     SQL__insert(
         "users",
-        "fullname, about",
-        "?, ?",
-        ["Kang Cahya", "Coder"]
+        [
+         { field: "fullname", value: "Kang Cahya" },
+         { field: "about", value: "Designer" }
+        ]
+    );
+} catch (error) {
+    console.log(error);
+}
+```
+
+#### UPDATE data USER by ID
+``` sql
+SQL__update(tableName, data, id, conditionalQuery)
+```
+I want to update field ABOUT by user ID number 3
+``` javascript
+import { SQL__insert } from "~/sql_helper";
+
+try {
+    SQL__update(
+        "users",
+        [
+         { field: "about", value: "Tester" }
+        ],
+        3
+    );
+} catch (error) {
+    console.log(error);
+}
+```
+
+#### UPDATE data USER with WHERE condition
+``` sql
+SQL__update(tableName, data, id, conditionalQuery)
+```
+I want to update field about by user ID number 3
+``` javascript
+import { SQL__insert } from "~/sql_helper";
+
+try {
+    SQL__update(
+        "users",
+        [
+         { field: "about", value: "Tester" }
+        ],
+        null,
+        "WHERE id='3'"
     );
 } catch (error) {
     console.log(error);
