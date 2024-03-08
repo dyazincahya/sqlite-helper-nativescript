@@ -1,6 +1,12 @@
 import { openOrCreate } from "@nativescript-community/sqlite";
 
-const sqlite = openOrCreate("your_database.db");
+/* 
+  References:
+    - https://github.com/nativescript-community/sqlite 
+    - https://www.tutorialspoint.com/sqlite/index.htm
+*/
+
+const sqlite = openOrCreate("xlabs_bukukasbon.db");
 
 export async function SQL__select(table, fields = "*", conditionalQuery) {
   const select = "SELECT " + fields + " FROM " + table + " " + conditionalQuery;
@@ -8,15 +14,58 @@ export async function SQL__select(table, fields = "*", conditionalQuery) {
   return data;
 }
 
-export async function SQL__insert(table, fields, holder, value = []) {
-  const insert =
-    "INSERT INTO " + table + " (" + fields + ") VALUES (" + holder + ")";
-  await sqlite.execute(insert, value);
+export async function SQL__insert(table, data = []) {
+  if (data.length) {
+    let fields = [],
+      holder = [],
+      value = [];
+    for (let key in data) {
+      fields.push(key);
+      holder.push("?");
+      value.push(data[key]);
+    }
+
+    let fieldsString = fields.join(", "),
+      holderString = holder.join(", ");
+
+    const insert =
+      "INSERT INTO " +
+      table +
+      " (" +
+      fieldsString +
+      ") VALUES (" +
+      holderString +
+      ")";
+    await sqlite.execute(insert, value);
+  } else {
+    console.dir("Data : ", data);
+    console.dir("Data length : ", data.length);
+    console.log("No data to insert");
+  }
 }
 
-export async function SQL__update(table, dataSet, conditionalQuery) {
-  const update = "UPDATE " + table + " SET " + dataSet + " " + conditionalQuery;
-  await sqlite.execute(update, value);
+export async function SQL__update(table, data = [], id, conditionalQuery) {
+  if (data.length) {
+    let dataSet = [];
+    for (let key in data) {
+      dataSet.push(key + " = " + data[key]);
+    }
+
+    let dataSetString = dataSet.join(", ");
+
+    if (id) {
+      const update =
+        "UPDATE " + table + " SET " + dataSetString + " WHERE id=" + id;
+    } else {
+      const update =
+        "UPDATE " + table + " SET " + dataSetString + " " + conditionalQuery;
+    }
+    await sqlite.execute(update);
+  } else {
+    console.dir("Data : ", data);
+    console.dir("Data length : ", data.length);
+    console.log("No data to update");
+  }
 }
 
 export async function SQL__delete(table, conditionalQuery) {
@@ -29,6 +78,5 @@ export async function SQL__truncate(table) {
 }
 
 export async function SQL__query(query) {
-  const data = await sqlite.execute(query);
-  return data;
+  await sqlite.execute(query);
 }
