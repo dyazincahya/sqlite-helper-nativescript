@@ -6,7 +6,7 @@ import { openOrCreate } from "@nativescript-community/sqlite";
     - https://www.tutorialspoint.com/sqlite/index.htm
 */
 
-const sqlite = openOrCreate("xlabs_bukukasbon.db");
+const sqlite = openOrCreate("dbname.db");
 
 export async function SQL__select(table, fields = "*", conditionalQuery) {
   const select = "SELECT " + fields + " FROM " + table + " " + conditionalQuery;
@@ -19,10 +19,10 @@ export async function SQL__insert(table, data = []) {
     let fields = [],
       holder = [],
       value = [];
-    for (let key in data) {
-      fields.push(key);
+    for (let i in data) {
+      fields.push(data[i].field);
       holder.push("?");
-      value.push(data[key]);
+      value.push(data[i].value);
     }
 
     let fieldsString = fields.join(", "),
@@ -47,8 +47,8 @@ export async function SQL__insert(table, data = []) {
 export async function SQL__update(table, data = [], id, conditionalQuery) {
   if (data.length) {
     let dataSet = [];
-    for (let key in data) {
-      dataSet.push(key + " = " + data[key]);
+    for (let i in data) {
+      dataSet.push(data[i].field + " = " + data[i].value);
     }
 
     let dataSetString = dataSet.join(", ");
