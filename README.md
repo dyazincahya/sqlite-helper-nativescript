@@ -34,6 +34,34 @@ CREATE TABLE "users" (
 )
 ```
 
+#### GET all USERS
+``` sql
+SQL__select(tableName)
+```
+I want to get all user data from the table
+``` javascript
+import { SQL__select } from "~/sql_helper";
+
+SQL__select("users").then((res) => {
+   console.log(res);
+   console.log(res.length);
+});
+```
+
+#### GET USER where FULLNAME is JOHN DUO
+```sql
+SQL__select(tableName, fields, conditionalQuery)
+```
+I want to get all user data from table by fullname is john duo
+``` javascript
+import { SQL__select } from "~/sql_helper";
+
+SQL__select("users", "*", "WHERE fullname='john duo'").then((res) => {
+   console.log(res);
+   console.log(res.length);
+});
+```
+
 #### CREATE new USER
 ``` sql
 SQL__insert(tableName, data)
@@ -42,17 +70,10 @@ I want to create new user with fullname is Kang Cahya and about is Designer
 ``` javascript
 import { SQL__insert } from "~/sql_helper";
 
-try {
-    SQL__insert(
-        "users",
-        [
-         { field: "fullname", value: "Kang Cahya" },
-         { field: "about", value: "Designer" }
-        ]
-    );
-} catch (error) {
-    console.log(error);
-}
+SQL__insert("users", [
+   { field: "fullname", value: "Kang Cahya" },
+   { field: "about", value: "Designer" }
+]);
 ```
 
 #### UPDATE data USER by ID
@@ -63,17 +84,7 @@ I want to update field ABOUT by user ID number 3
 ``` javascript
 import { SQL__insert } from "~/sql_helper";
 
-try {
-    SQL__update(
-        "users",
-        [
-         { field: "about", value: "Tester" }
-        ],
-        3
-    );
-} catch (error) {
-    console.log(error);
-}
+SQL__update("users", [{ field: "about", value: "Tester" }], 3);
 ```
 
 #### UPDATE data USER with WHERE condition
@@ -84,18 +95,7 @@ I want to update field about by user ID number 3
 ``` javascript
 import { SQL__insert } from "~/sql_helper";
 
-try {
-    SQL__update(
-        "users",
-        [
-         { field: "about", value: "Tester" }
-        ],
-        null,
-        "WHERE id='3'"
-    );
-} catch (error) {
-    console.log(error);
-}
+SQL__update("users", [{ field: "about", value: "Tester" }], null, "WHERE id='3'");
 ```
 
 ## More info about Sqlite
