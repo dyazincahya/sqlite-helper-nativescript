@@ -7,7 +7,7 @@ import { openOrCreate } from "@nativescript-community/sqlite";
 */
 
 const sqlite = openOrCreate("dbname.db");
-const env = "production"; // development, production
+const showError = false;
 
 export async function SQL__select(table, fields = "*", conditionalQuery) {
   try {
@@ -16,7 +16,7 @@ export async function SQL__select(table, fields = "*", conditionalQuery) {
     const data = await sqlite.select(select);
     return data;
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__select error >> ", error);
     }
   }
@@ -53,7 +53,7 @@ export async function SQL__insert(table, data = []) {
       console.log("No data to insert");
     }
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__insert error >> ", error);
     }
   }
@@ -83,7 +83,7 @@ export async function SQL__update(table, data = [], id, conditionalQuery) {
       console.log("No data to update");
     }
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__update error >> ", error);
     }
   }
@@ -93,7 +93,7 @@ export async function SQL__delete(table, conditionalQuery) {
   try {
     await sqlite.execute("DELETE FROM " + table + " " + conditionalQuery);
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__delete error >> ", error);
     }
   }
@@ -104,7 +104,7 @@ export async function SQL__truncate(table) {
     await sqlite.execute("DELETE FROM " + table);
     await sqlite.execute("VACUUM");
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__truncate error >> ", error);
     }
   }
@@ -115,7 +115,7 @@ export async function SQL__query(query) {
     const data = await sqlite.execute(query);
     return data;
   } catch (error) {
-    if (env === "development") {
+    if (showError) {
       console.log("SQL__query error >> ", error);
     }
   }
