@@ -23,8 +23,8 @@ Example code about how to usage Nativescript Sqlite (NS 8 or newer)
 
 ## Sample Code
 
-#### TABLE
-Assummed I have a **user** table like this :
+### TABLE
+Assummed I have a **users** table like this :
 ``` sql
 CREATE TABLE "users" (
 	"id"	INTEGER NOT NULL UNIQUE,
@@ -33,6 +33,22 @@ CREATE TABLE "users" (
 	PRIMARY KEY("id" AUTOINCREMENT)
 )
 ```
+
+#### CREATE new TABLE USERS
+Before you can do something, make sure you already create the table. for create table in SQLite, you can use method ```SQL_query``` from ```sql_helper.js```, example like this :
+``` javascript
+import { SQL_query } from "~/sql_helper";
+
+SQL_query(`CREATE TABLE IF NOT EXISTS "users" (
+	"id"	INTEGER NOT NULL UNIQUE,
+	"fullname"	TEXT NOT NULL,
+	"about"	TEXT DEFAULT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+)`);
+```
+
+When you make create table query, make sure you use ```IF NOT EXISTS``` in your query. This is useful to avoid double execution of your query.
+
 
 #### GET all USERS
 ``` sql
