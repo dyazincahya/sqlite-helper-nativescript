@@ -60,28 +60,33 @@ export async function SQL__insert(table, data = []) {
 }
 
 export async function SQL__update(table, data = [], id, conditionalQuery) {
+  if (!data.length) {
+    console.dir("Data : ", data);
+    console.dir("Data length : ", data.length);
+    console.log("No data to update");
+    return;
+  }
+
+  let update,
+    dataSet = [],
+    valueSet = [];
+
+  for (let i in data) {
+    dataSet.push(data[i].field + " = ?");
+    valueSet.push(data[i].value);
+  }
+
+  let dataSetString = dataSet.join(", ");
+
+  if (id) {
+    update = "UPDATE " + table + " SET " + dataSetString + " WHERE id=" + id;
+  } else {
+    update =
+      "UPDATE " + table + " SET " + dataSetString + " " + conditionalQuery;
+  }
+
   try {
-    if (data.length) {
-      let dataSet = [];
-      for (let i in data) {
-        dataSet.push(data[i].field + " = " + data[i].value);
-      }
-
-      let dataSetString = dataSet.join(", ");
-
-      if (id) {
-        const update =
-          "UPDATE " + table + " SET " + dataSetString + " WHERE id=" + id;
-      } else {
-        const update =
-          "UPDATE " + table + " SET " + dataSetString + " " + conditionalQuery;
-      }
-      await sqlite.execute(update);
-    } else {
-      console.dir("Data : ", data);
-      console.dir("Data length : ", data.length);
-      console.log("No data to update");
-    }
+    await sqlite.execute(update, valueSet);
   } catch (error) {
     if (showError) {
       console.log("SQL__update error >> ", error);
