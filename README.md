@@ -14,12 +14,13 @@ Example code about how to usage Nativescript Sqlite (NS 8 or newer)
     | Method            | Description                                                 | Return |
     |-------------------|-------------------------------------------------------------|--------|
     | SQL_select(...)   | get data from table                                         | Array  |
+    | SQL__selectRaw(...) | execute advance query select, like JOIN Query or ETC for get data from table | Array | 
     | SQL_insert(...)   | for insert data to table                                    | void   |
     | SQL_update(...)   | for update data to table                                    | void   |
     | SQL_delete(...)   | for delete data row from table                              | void   |
     | SQL_truncate(...) | for clear all data on the table                             | void   |
     | SQL_query(...)    | for execute raw query, here you can execute Join Query, Etc | ?      |
-5. For details, you can look at the [sql_helper.js](https://github.com/dyazincahya/example-code-sqlite-nativescript/blob/main/sql_helper.js) file directly
+6. For details, you can look at the [sql_helper.js](https://github.com/dyazincahya/example-code-sqlite-nativescript/blob/main/sql_helper.js) file directly
 
 ## Sample Code
 
