@@ -1,5 +1,5 @@
-# Example Sqlite Nativescript
-Example code about how to usage Nativescript Sqlite (NS 8 or newer)
+# Sqlite Helper Nativescript
+Code about how to usage Nativescript Sqlite (NS 8 or newer)
 
 > in this example I use the plugin [nativescript-community/sqlite](https://github.com/nativescript-community/sqlite)
 
