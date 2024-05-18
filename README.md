@@ -29,7 +29,7 @@ Before you using this helper, you must be install plugin [nativescript-community
     | SQL_update(...)   | for update data to table                                    | void   |
     | SQL_delete(...)   | for delete data row from table                              | void   |
     | SQL_truncate(...) | for clear all data on the table                             | void   |
-    | SQL_query(...)    | for execute raw query, here you can execute Join Query, Etc | ?      |
+    | SQL_query(...)    | for execute raw query like Create new Table, Etc | ?      |
 7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
 
 
