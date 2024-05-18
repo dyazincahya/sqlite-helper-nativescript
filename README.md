@@ -12,7 +12,7 @@ Before you using this helper, you must be install plugin [nativescript-community
 
 
 ## Instructions
-1. Download file [sqlite_helper.js](https://github.com/dyazincahya/example-code-sqlite-nativescript/blob/main/sqlite_helper.js) and save that file here : ```\YOUR_NATIVESCRIPT_PROJECT\app```
+1. Download file [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) and save that file here : ```\YOUR_NATIVESCRIPT_PROJECT\app```
 2. In the ```sqlite_helper.js``` file, find ```openOrCreate("your_database.db")``` code and change with your database name
 3. Then put the ```your_database.db``` on ```\YOUR_NATIVESCRIPT_PROJECT\app```
 4. In the ```sqlite_helper.js``` file, find ```showError``` variable then set it to ```true``` if you want to see all errors that occur during development on your sqlite
@@ -30,7 +30,7 @@ Before you using this helper, you must be install plugin [nativescript-community
     | SQL_delete(...)   | for delete data row from table                              | void   |
     | SQL_truncate(...) | for clear all data on the table                             | void   |
     | SQL_query(...)    | for execute raw query, here you can execute Join Query, Etc | ?      |
-7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/example-code-sqlite-nativescript/blob/main/sqlite_helper.js) file directly
+7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
 
 
 ## Sample Code
