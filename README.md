@@ -23,13 +23,13 @@ Before you using this helper, you must be install plugin [nativescript-community
 6. Avaliable methode on ```sql_helper.js```
     | Method            | Description                                                 | Return |
     |-------------------|-------------------------------------------------------------|--------|
-    | SQL_select(...)   | get data from table                                         | Array  |
-    | SQL__selectRaw(...) | execute advance query select, like JOIN Query or ETC for get data from table | Array | 
+    | SQL_select(...)   | for get data from table                                         | Array  |
+    | SQL__selectRaw(...) | for get data from table, same like ```SQL_select```, but here you can execute simple or advance query, like JOIN Query or etc | Array | 
     | SQL_insert(...)   | for insert data to table                                    | void   |
     | SQL_update(...)   | for update data to table                                    | void   |
     | SQL_delete(...)   | for delete data row from table                              | void   |
     | SQL_truncate(...) | for clear all data on the table                             | void   |
-    | SQL_query(...)    | for execute raw query like Create new Table, Etc | ?      |
+    | SQL_query(...)    | for execute raw query like Create new Table or Etc | ?      |
 7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
 
 
