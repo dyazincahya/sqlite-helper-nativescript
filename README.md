@@ -23,13 +23,13 @@ Before you using this helper, you must be install plugin [nativescript-community
 6. Avaliable methode on ```sql_helper.js```
     | Method            | Description                                                 | Return |
     |-------------------|-------------------------------------------------------------|--------|
-    | SQL_select(...)   | for get data from table                                         | Array  |
+    | SQL__select(...)   | for get data from table                                         | Array  |
     | SQL__selectRaw(...) | for get data from table, same like ```SQL_select```, but here you can execute simple or advance query, like JOIN Query or etc | Array | 
-    | SQL_insert(...)   | for insert data to table                                    | void   |
-    | SQL_update(...)   | for update data to table                                    | void   |
-    | SQL_delete(...)   | for delete data row from table                              | void   |
-    | SQL_truncate(...) | for clear all data on the table                             | void   |
-    | SQL_query(...)    | for execute raw query like Create new Table or Etc | ?      |
+    | SQL__insert(...)   | for insert data to table                                    | void   |
+    | SQL__update(...)   | for update data to table                                    | void   |
+    | SQL__delete(...)   | for delete data row from table                              | void   |
+    | SQL__truncate(...) | for clear all data on the table                             | void   |
+    | SQL__query(...)    | for execute raw query like Create new Table or Etc | ?      |
 7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
 
 
@@ -49,9 +49,9 @@ CREATE TABLE "users" (
 #### CREATE new TABLE USERS
 Before you can do something, make sure you already create the table. for create table in SQLite, you can use method ```SQL_query``` from ```sqlite_helper.js```, example like this :
 ``` javascript
-import { SQL_query } from "~/sqlite_helper";
+import { SQL__query } from "~/sqlite_helper";
 
-SQL_query(`CREATE TABLE IF NOT EXISTS "users" (
+SQL__query(`CREATE TABLE IF NOT EXISTS "users" (
 	"id"	INTEGER NOT NULL UNIQUE,
 	"fullname"	TEXT NOT NULL,
 	"about"	TEXT DEFAULT NULL,
