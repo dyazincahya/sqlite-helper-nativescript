@@ -21,7 +21,7 @@ const config = {
   databaseName: "YOUR_DATABASE_NAME.db", // set your database name
   debug: true, // set false for production and set true for development
   paths: {
-    documentsFolder: knownFolders.documents(), // don't change this part, this for get root directory file
+    documentsFolder: knownFolders.documents(), // don't change this part, this for get root directory
     assetsFolder: "assets/db", // location your sqlite file database
   },
 };
