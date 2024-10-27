@@ -5,7 +5,8 @@ This ```helper``` can helping you when you using SQLite in Nativescript
 ## Dependency
 Before you using this helper, you must be install plugin [nativescript-community/sqlite](https://github.com/nativescript-community/sqlite), cause this helper running on this plugin.
 
-
+## Changelogs
+See full changelogs [here](https://github.com/dyazincahya/sqlite-helper-nativescript/releases)
 ## Requirement
 - [Nativescript 8 or newer](https://nativescript.org/)
 - [nativescript-community/sqlite](https://github.com/nativescript-community/sqlite)
