@@ -132,7 +132,7 @@ export async function SQL__select(
   fields = "*",
   conditionalQuery = null
 ) {
-  await initializeDatabase(); // Menunggu hingga database terinisialisasi sepenuhnya
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     let selectQuery;
@@ -164,7 +164,7 @@ export async function SQL__select(
  * @returns         - data (array of objects)
  */
 export async function SQL__selectRaw(query = null) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     if (!query) {
@@ -194,7 +194,7 @@ export async function SQL__selectRaw(query = null) {
  * @returns         - void
  */
 export async function SQL__insert(table, data = []) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     if (!data.length) {
@@ -231,7 +231,7 @@ export async function SQL__insert(table, data = []) {
  * @returns                     - void
  */
 export async function SQL__update(table, data = [], id, conditionalQuery) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     if (!data.length) {
@@ -268,7 +268,7 @@ export async function SQL__update(table, data = [], id, conditionalQuery) {
  * @returns                     - void
  */
 export async function SQL__delete(table, id, conditionalQuery) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     let deleteQuery = id
@@ -295,7 +295,7 @@ export async function SQL__delete(table, id, conditionalQuery) {
  * @returns         - void
  */
 export async function SQL__truncate(table) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     try {
@@ -320,7 +320,7 @@ export async function SQL__truncate(table) {
  * @returns             - void
  */
 export async function SQL__dropTable(table, ifExist = false) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     let dropQuery = ifExist
@@ -347,7 +347,7 @@ export async function SQL__dropTable(table, ifExist = false) {
  * @returns         - data (array of objects)
  */
 export async function SQL__query(query) {
-  await initializeDatabase();
+  await initializeDatabase(); // Waiting for the database to be fully initialized
 
   if (sqlite) {
     try {
