@@ -12,11 +12,11 @@ import { openOrCreate } from "@nativescript-community/sqlite";
  * @type {Object}
  */
 const config = {
-  databaseName: "YOUR_DATABASE_NAME.db",
-  debug: true,
+  databaseName: "YOUR_DATABASE_NAME.db", // set your database name
+  debug: true, // set false for production and set true for development
   paths: {
-    documentsFolder: knownFolders.documents(),
-    assetsFolder: "assets/db",
+    documentsFolder: knownFolders.documents(), // don't change this part, this for get root directory file
+    assetsFolder: "assets/db", // location your sqlite file database
   },
 };
 
