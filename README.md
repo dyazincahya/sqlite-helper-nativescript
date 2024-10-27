@@ -13,15 +13,24 @@ Before you using this helper, you must be install plugin [nativescript-community
 
 ## Instructions
 1. Download file [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) and save that file here : ```\YOUR_NATIVESCRIPT_PROJECT\app```
-2. Create ```.db``` file using [SQLite Browser](https://sqlitebrowser.org)
-3. And after that put the ```your_database.db``` in ```\YOUR_NATIVESCRIPT_PROJECT\app```
-4. Then in the ```sqlite_helper.js``` file, find ```openOrCreate("your_database.db")``` code and change with your database name.
-5. Still in the ```sqlite_helper.js``` file, find ```showError``` variable then set it to ```true``` if you want to see all errors that occur during development on your sqlite.
-6. import file sql_helper.js on your module, like :
+2. Create ```.db``` file using [SQLite Browser](https://sqlitebrowser.org) and create ```assets\db``` folder on ```\YOUR_NATIVESCRIPT_PROJECT\app```
+3. And after that put the ```your_database.db``` in ```\YOUR_NATIVESCRIPT_PROJECT\app\assets\db```
+4. Open [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file, you can adjust configuration here
+```javascript
+const config = {
+  databaseName: "YOUR_DATABASE_NAME.db", // set your database name
+  debug: true, // set false for production and set true for development
+  paths: {
+    documentsFolder: knownFolders.documents(), // don't change this part, this for get root directory file
+    assetsFolder: "assets/db", // location your sqlite file database
+  },
+};
+```
+5. import file sql_helper.js on your module, like :
    ``` javascript
    import { SQL__select, SQL__selectRaw, SQL__insert, SQL__update, SQL__delete, SQL__truncate, SQL__query } from "~/sqlite_helper";
    ```
-7. Avaliable methode on ```sql_helper.js```
+6. Avaliable methode on ```sql_helper.js```
     | Method            | Description                                                 | Return |
     |-------------------|-------------------------------------------------------------|--------|
     | SQL__select(...)   | for get data from table                                         | Array  |
@@ -31,7 +40,7 @@ Before you using this helper, you must be install plugin [nativescript-community
     | SQL__delete(...)   | for delete data row from table                              | void   |
     | SQL__truncate(...) | for clear all data on the table                             | void   |
     | SQL__query(...)    | for execute raw query like Create new Table or Etc | ?      |
-8. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
+7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
 
 
 ## Sample Code
