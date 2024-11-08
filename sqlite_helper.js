@@ -2,14 +2,17 @@ import { knownFolders, path, File } from "@nativescript/core";
 import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
-* SQLite Helper {N} v2.0
+* @Name       : SQLite Helper {N}
+* @Version    : 2.0
+* @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
+* @Author     : Kang Cahya (github.com/dyazincahya)
+* @Blog       : https://www.kang-cahya.com
+* ===============================================================================================================
+* @References : https://github.com/nativescript-community/sqlite
+*               https://www.tutorialspoint.com/sqlite/index.htm
+* ===============================================================================================================
 */
 
-/* 
-  References:
-    - https://github.com/nativescript-community/sqlite 
-    - https://www.tutorialspoint.com/sqlite/index.htm
-*/
 
 /**
  * Configuration database
