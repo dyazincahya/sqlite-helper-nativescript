@@ -1,6 +1,10 @@
 import { knownFolders, path, File } from "@nativescript/core";
 import { openOrCreate } from "@nativescript-community/sqlite";
 
+/*
+* SQLite Helper {N} v2.0
+*/
+
 /* 
   References:
     - https://github.com/nativescript-community/sqlite 
