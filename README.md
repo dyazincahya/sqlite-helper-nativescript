@@ -137,5 +137,8 @@ import { SQL__insert } from "~/sqlite_helper";
 SQL__update("users", [{ field: "about", value: "Tester" }], null, "WHERE id='3'");
 ```
 
+## My Nativescript App using SQLite Helper
+[WA Sender](https://github.com/x-labs-86/wa-sender)
+
 ## More info about Sqlite
 [Sqlite Tutorial by Tutorialspoint](https://www.tutorialspoint.com/sqlite/index.htm)
