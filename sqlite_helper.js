@@ -22,8 +22,8 @@ const config = {
   databaseName: "YOUR_DATABASE_NAME.db", // set your database name
   debug: true, // set false for production and set true for development
   paths: {
-    documentsFolder: knownFolders.documents(), // don't change this part, this for get root directory file
-    assetsFolder: "assets/db", // location your sqlite file database
+    documentsFolder: knownFolders.documents(), // Do not change this value. It is used to get the root documents directory.
+    assetsFolder: "assets/db", // Location of your SQLite database file. If you place an existing database here, this helper will automatically copy it to the system directory, so you don't need to manually create the database.
   },
 };
 
