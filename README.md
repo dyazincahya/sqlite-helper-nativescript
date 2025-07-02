@@ -11,11 +11,21 @@ See full changelogs [here](https://github.com/dyazincahya/sqlite-helper-nativesc
 - [Nativescript 8 or newer](https://nativescript.org/)
 - [nativescript-community/sqlite](https://github.com/nativescript-community/sqlite)
 
+## Folder Structure
+```
+NSProject/
+├── app/
+│   └── assets/
+│       └── db/
+│           └── your_database.db <== SQLite database
+│   └── sqlite_helper.js <== SQLite helper functions
+│
+```
 
 ## Instructions
-1. Download file [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) and save that file here : ```\YOUR_NATIVESCRIPT_PROJECT\app```
-2. Create ```.db``` file using [SQLite Browser](https://sqlitebrowser.org) and create ```assets\db``` folder on ```\YOUR_NATIVESCRIPT_PROJECT\app```
-3. And after that put the ```your_database.db``` in ```\YOUR_NATIVESCRIPT_PROJECT\app\assets\db```
+1. Download file [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) and save that file here : ```\NSProject\app```
+2. Create ```.db``` file using [SQLite Browser](https://sqlitebrowser.org) and create ```assets\db``` folder on ```\NSProject\app```
+3. And after that put the ```your_database.db``` in ```\NSProject\app\assets\db```
 4. Open [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file, you can adjust configuration here
 ```javascript
 const config = {
