@@ -2,17 +2,15 @@ import { knownFolders, path, File } from "@nativescript/core";
 import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
-* @Name       : SQLite Helper {N}
-* @Version    : 2.0
-* @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
-* @Author     : Kang Cahya (github.com/dyazincahya)
-* @Blog       : https://www.kang-cahya.com
-* ===============================================================================================================
-* @References : https://github.com/nativescript-community/sqlite
-*               https://www.tutorialspoint.com/sqlite/index.htm
-* ===============================================================================================================
-*/
-
+ * @Name       : SQLite Helper {N}
+ * @Version    : 3.0 (Optimized for Bulk & Transactions)
+ * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
+ * @Author     : Kang Cahya (github.com/dyazincahya)
+ * @Blog       : https://www.kang-cahya.com
+ * ===============================================================================================================
+ * @References : https://github.com/nativescript-community/sqlite
+ * ===============================================================================================================
+ */
 
 /**
  * Configuration database
@@ -22,8 +20,8 @@ const config = {
   databaseName: "YOUR_DATABASE_NAME.db", // set your database name
   debug: true, // set false for production and set true for development
   paths: {
-    documentsFolder: knownFolders.documents(), // Do not change this value. It is used to get the root documents directory.
-    assetsFolder: "assets/db", // Location of your SQLite database file. If you place an existing database here, this helper will automatically copy it to the system directory, so you don't need to manually create the database.
+    documentsFolder: knownFolders.documents(),
+    assetsFolder: "assets/db",
   },
 };
 
@@ -33,341 +31,306 @@ const config = {
  */
 const dbPath = path.join(
   config.paths.documentsFolder.path,
-  config.databaseName
+  config.databaseName,
 );
 
 /**
- * Variable sqlite
- * @type {Object}
+ * Variable sqlite instance
+ * @type {any}
  */
 let sqlite = null;
 
 /**
- * Initialize database
+ * Initialization lock to prevent concurrent opening attempts
+ * @type {Promise<any>|null}
+ */
+let initPromise = null;
+
+/**
+ * Initialize database with singleton pattern and lock
  * @async
  * @function initializeDatabase
- * @returns {Promise<Object>} sqlite
+ * @returns {Promise<any>} sqlite instance
  */
 async function initializeDatabase() {
-  if (sqlite) {
-    // If the database is already open, immediately return sqlite
-    return sqlite;
-  }
+  if (sqlite) return sqlite;
 
-  if (!config.databaseName || config.databaseName === "YOUR_DATABASE_NAME.db") {
-    console.log("Database name is not defined or empty.");
-    return null;
-  }
+  // If initialization is already in progress, wait for it
+  if (initPromise) return initPromise;
 
-  try {
-    const isFileDbExists = File.exists(dbPath);
-    if (!isFileDbExists) {
-      // If the database is not in the document, copy it from assets.
-      const assetsPath = knownFolders
-        .currentApp()
-        .getFolder(config.paths.assetsFolder).path;
-      const pathDbAssets = path.join(assetsPath, config.databaseName);
-      const fileDb = File.fromPath(pathDbAssets);
+  initInitPromise();
+  return initPromise;
+}
 
-      if (config.debug) {
-        console.log("Database not found. Copying from assets...");
-        console.log("Assets path:", pathDbAssets);
-        console.log("Database path:", dbPath);
-        console.log("File exists:", fileDb.exists);
-        console.log("File path:", fileDb.path);
-        console.log("File size:", fileDb.size);
-        console.log("File extension:", fileDb.extension);
+function initInitPromise() {
+  initPromise = (async () => {
+    if (!config.databaseName || config.databaseName === "YOUR_DATABASE_NAME.db") {
+      console.warn("SQLite: Database name is not defined or empty.");
+      return null;
+    }
+
+    try {
+      const isFileDbExists = File.exists(dbPath);
+      if (!isFileDbExists) {
+        const assetsPath = knownFolders
+          .currentApp()
+          .getFolder(config.paths.assetsFolder).path;
+        const pathDbAssets = path.join(assetsPath, config.databaseName);
+        const fileDb = File.fromPath(pathDbAssets);
+
+        if (File.exists(pathDbAssets)) {
+          if (config.debug) console.log("SQLite: Copying database from assets...");
+          await fileDb.copy(dbPath);
+        } else {
+          if (config.debug) console.log("SQLite: No seed database found in assets, starting fresh.");
+        }
       }
 
-      // copy the database file from assets to documents
-      await fileDb.copy(dbPath);
+      // Open database
+      sqlite = openOrCreate(dbPath);
+      if (config.debug) console.log("SQLite: Database opened at", dbPath);
 
-      if (config.debug) {
-        console.log("Database copied to: ", dbPath);
-      }
+      return sqlite;
+    } catch (error) {
+      console.error("SQLite: Initialization error >> ", error);
+      throw error;
+    } finally {
+      initPromise = null;
     }
-
-    // Open or create a connection to the database after ensuring the file exists.
-    sqlite = openOrCreate(dbPath);
-    if (config.debug) {
-      console.log("Database opened at: ", dbPath);
-    }
-    return sqlite;
-  } catch (error) {
-    if (config.debug) {
-      console.error("Error initializing database: ", error);
-    }
-  }
+  })();
 }
 
 /* 
-  * MAIN FUNCTION of SQLITE-HELPER 
-  * --------------------------------
-  * - SQL__select
-  * - SQL__selectRaw
-  * - SQL__insert
-  * - SQL__update
-  * - SQL__delete
-  * - SQL__truncate
-  * - SQL__dropTable
-  * - SQL__query
-  * --------------------------------
-  * Example:
-    SQL__select("table_name", "field1, field2", "WHERE id = 1")
-    SQL__selectRaw("SELECT * FROM table_name WHERE id = 1")
-    SQL__insert("table_name", [{field: "field1", value: "value1"}, {field: "field2", value: "value2"}])
-    SQL__update("table_name", [{field: "field1", value: "new_value1"}, {field: "field2", value: "new_value2"}], 1, "WHERE id = 1")
-    SQL__delete("table_name", 1, "WHERE id = 1")
-    SQL__truncate("table_name")
-    SQL__dropTable("table_name")
-    SQL__query("SELECT * FROM table_name")
-    --------------------------------
-  * --------------------------------
-  * --------------------------------
+  * MAIN CRUD FUNCTIONS
   * --------------------------------
 */
 
 /**
- *
- * @param {*} table             - table name
- * @param {*} fields            - fields name (default: "*")
- * @param {*} conditionalQuery  - conditional query (default: null)
- * @returns                     - data (array of objects)
+ * Perform a SELECT query
+ * @param {string} table             - table name
+ * @param {string} fields            - fields name (default: "*")
+ * @param {string} conditionalQuery  - conditional query (default: "")
+ * @returns {Promise<any[]>}         - array of records
  */
-export async function SQL__select(
-  table,
-  fields = "*",
-  conditionalQuery = null
-) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+export async function SQL__select(table, fields = "*", conditionalQuery = "") {
+  await initializeDatabase();
+  if (!sqlite) return [];
 
-  if (sqlite) {
-    let selectQuery;
-
-    if (conditionalQuery) {
-      selectQuery = `SELECT ${fields} FROM ${table} ${conditionalQuery}`;
-    } else {
-      selectQuery = `SELECT ${fields} FROM ${table}`;
-    }
-
-    try {
-      const data = await sqlite.select(selectQuery);
-      return data;
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__select error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__select error >> Database not initialized.");
-    }
+  const query = `SELECT ${fields} FROM ${table} ${conditionalQuery}`.trim();
+  try {
+    return await sqlite.select(query);
+  } catch (error) {
+    if (config.debug) console.error("SQL__select error >> ", error);
+    return [];
   }
 }
 
 /**
- *
- * @param {*} query - raw query (default: null)
- * @returns         - data (array of objects)
+ * Perform a raw SELECT query
+ * @param {string} query - SQL query
+ * @returns {Promise<any[]>}
  */
-export async function SQL__selectRaw(query = null) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+export async function SQL__selectRaw(query) {
+  if (!query) return [];
+  await initializeDatabase();
+  if (!sqlite) return [];
 
-  if (sqlite) {
-    if (!query) {
-      console.log("No query");
-      return;
-    }
-
-    try {
-      const data = await sqlite.select(query);
-      return data;
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__selectRaw error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__selectRaw error >> Database not initialized.");
-    }
+  try {
+    return await sqlite.select(query);
+  } catch (error) {
+    if (config.debug) console.error("SQL__selectRaw error >> ", error);
+    return [];
   }
 }
 
 /**
- *
- * @param {*} table  - table name
- * @param {*} data   - data (array of objects)
- * @returns         - void
+ * Perform an INSERT (Multiple rows supported via Transactions for bulk)
+ * @param {string} table  - table name
+ * @param {any|any[]} data   - object {field, value} array (legacy) or items (bulk)
+ * @returns {Promise<void>}
  */
 export async function SQL__insert(table, data = []) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+  await initializeDatabase();
+  if (!sqlite || !data) return;
 
-  if (sqlite) {
-    if (!data.length) {
-      console.log("No data to insert");
-      return;
+  try {
+    // Current legacy format: [{field: 'name', value: 'val'}, ...]
+    // If it's this format, we insert one row.
+    if (Array.isArray(data) && data.length > 0 && typeof data[0].field === "string") {
+      const fields = data.map((item) => item.field).join(", ");
+      const holders = data.map(() => "?").join(", ");
+      const values = data.map((item) => item.value);
+      const query = `INSERT INTO ${table} (${fields}) VALUES (${holders})`;
+      await sqlite.execute(query, values);
+    } else if (Array.isArray(data)) {
+      // Potentially many rows of legacy format or objects
+      // For now, let's stick to consistent legacy if possible or use transaction
+      await SQL__transaction(async (db) => {
+        for (const entry of data) {
+          const fields = entry.map((item) => item.field).join(", ");
+          const holders = entry.map(() => "?").join(", ");
+          const values = entry.map((item) => item.value);
+          await db.execute(`INSERT INTO ${table} (${fields}) VALUES (${holders})`, values);
+        }
+      });
     }
-
-    let fields = data.map((item) => item.field).join(", ");
-    let holder = data.map(() => "?").join(", ");
-    let values = data.map((item) => item.value);
-
-    let insertQuery = `INSERT INTO ${table} (${fields}) VALUES (${holder})`;
-
-    try {
-      await sqlite.execute(insertQuery, values);
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__insert error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__insert error >> Database not initialized.");
-    }
+  } catch (error) {
+    if (config.debug) console.error("SQL__insert error >> ", error);
   }
 }
 
 /**
- *
- * @param {*} table             - table name
- * @param {*} data              - data (array of objects)
- * @param {*} id                - id (default: null) - if null, use conditionalQuery
- * @param {*} conditionalQuery  - conditional query (default: null) - if null, use id
- * @returns                     - void
+ * Perform an UPDATE
+ * @param {string} table             - table name
+ * @param {any[]} data               - array of {field, value}
+ * @param {number|string} id         - primary key ID (optional if conditionalQuery provided)
+ * @param {string} conditionalQuery  - optional WHERE clause
+ * @returns {Promise<void>}
  */
-export async function SQL__update(table, data = [], id, conditionalQuery) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+export async function SQL__update(table, data = [], id = null, conditionalQuery = "") {
+  await initializeDatabase();
+  if (!sqlite || !data.length) return;
 
-  if (sqlite) {
-    if (!data.length) {
-      console.log("No data to update");
-      return;
-    }
+  const dataSet = data.map((item) => `${item.field} = ?`).join(", ");
+  const values = data.map((item) => item.value);
 
-    let dataSet = data.map((item) => `${item.field} = ?`).join(", ");
-    let values = data.map((item) => item.value);
+  const where = id ? `WHERE id = ${id}` : conditionalQuery;
+  const query = `UPDATE ${table} SET ${dataSet} ${where}`.trim();
 
-    let updateQuery = id
-      ? `UPDATE ${table} SET ${dataSet} WHERE id=${id}`
-      : `UPDATE ${table} SET ${dataSet} ${conditionalQuery}`;
-
-    try {
-      await sqlite.execute(updateQuery, values);
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__update error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__update error >> Database not initialized.");
-    }
+  try {
+    await sqlite.execute(query, values);
+  } catch (error) {
+    if (config.debug) console.error("SQL__update error >> ", error);
   }
 }
 
 /**
- *
- * @param {*} table             - table name
- * @param {*} id                - id (default: null) - if null, use conditionalQuery
- * @param {*} conditionalQuery  - conditional query (default: null) - if null, use id
- * @returns                     - void
+ * Delete records
+ * @param {string} table 
+ * @param {number|string} id 
+ * @param {string} conditionalQuery 
+ * @returns {Promise<void>}
  */
-export async function SQL__delete(table, id, conditionalQuery) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+export async function SQL__delete(table, id = null, conditionalQuery = "") {
+  await initializeDatabase();
+  if (!sqlite) return;
 
-  if (sqlite) {
-    let deleteQuery = id
-      ? `DELETE FROM ${table} WHERE id=${id}`
-      : `DELETE FROM ${table} ${conditionalQuery}`;
+  const where = id ? `WHERE id = ${id}` : conditionalQuery;
+  const query = `DELETE FROM ${table} ${where}`.trim();
 
-    try {
-      await sqlite.execute(deleteQuery);
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__delete error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__delete error >> Database not initialized.");
-    }
+  try {
+    await sqlite.execute(query);
+  } catch (error) {
+    if (config.debug) console.error("SQL__delete error >> ", error);
   }
 }
 
 /**
- *
- * @param {*} table  - table name
- * @returns         - void
+ * Truncate table and vacuum
+ * @param {string} table 
  */
 export async function SQL__truncate(table) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+  await initializeDatabase();
+  if (!sqlite) return;
 
-  if (sqlite) {
-    try {
-      await sqlite.execute(`DELETE FROM ${table}`);
-      await sqlite.execute("VACUUM");
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__truncate error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__truncate error >> Database not initialized.");
-    }
+  try {
+    await sqlite.execute(`DELETE FROM ${table}`);
+    await sqlite.execute("VACUUM");
+  } catch (error) {
+    if (config.debug) console.error("SQL__truncate error >> ", error);
   }
 }
 
 /**
- *
- * @param {*} table     - table name
- * @param {*} ifExist   - if exist (default: false)
- * @returns             - void
+ * Drop Table
+ * @param {string} table 
+ * @param {boolean} ifExist 
  */
 export async function SQL__dropTable(table, ifExist = false) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+  await initializeDatabase();
+  if (!sqlite) return;
 
-  if (sqlite) {
-    let dropQuery = ifExist
-      ? `DROP TABLE IF EXISTS ${table}`
-      : `DROP TABLE ${table}`;
-
-    try {
-      await sqlite.execute(dropQuery);
-    } catch (error) {
-      if (config.debug) {
-        console.log("SQL__dropTable error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__dropTable error >> Database not initialized.");
-    }
+  const query = ifExist ? `DROP TABLE IF EXISTS ${table}` : `DROP TABLE ${table}`;
+  try {
+    await sqlite.execute(query);
+  } catch (error) {
+    if (config.debug) console.error("SQL__dropTable error >> ", error);
   }
 }
 
 /**
- *
- * @param {*} query - raw query (default: null)
- * @returns         - data (array of objects)
+ * Execute custom query
+ * @param {string} query 
+ * @param {any[]} values 
+ * @returns {Promise<any>}
  */
-export async function SQL__query(query) {
-  await initializeDatabase(); // Waiting for the database to be fully initialized
+export async function SQL__query(query, values = []) {
+  await initializeDatabase();
+  if (!sqlite) return;
 
+  try {
+    return await sqlite.execute(query, values);
+  } catch (error) {
+    if (config.debug) console.error("SQL__query error >> ", error);
+  }
+}
+
+/**
+ * TRANSACTION: For heavy bulk operations
+ * @param {function} callback - async function(db) returning operations
+ * @returns {Promise<any>}
+ */
+export async function SQL__transaction(callback) {
+  await initializeDatabase();
+  if (!sqlite) return;
+
+  try {
+    return await sqlite.transaction(callback);
+  } catch (error) {
+    if (config.debug) console.error("SQL__transaction error >> ", error);
+    throw error;
+  }
+}
+
+/**
+ * Execute Batch: Fast execution of multiple queries
+ * @param {any[]} queries - array of [query, params] or string query
+ */
+export async function SQL__executeBatch(queries) {
+  await initializeDatabase();
+  if (!sqlite) return;
+
+  try {
+    // Check plugin support for executeBatch or fallback to transaction
+    if (typeof sqlite.executeBatch === "function") {
+      return await sqlite.executeBatch(queries);
+    } else {
+      return await SQL__transaction(async (db) => {
+        for (const q of queries) {
+          if (Array.isArray(q)) {
+            await db.execute(q[0], q[1] || []);
+          } else {
+            await db.execute(q);
+          }
+        }
+      });
+    }
+  } catch (error) {
+    if (config.debug) console.error("SQL__executeBatch error >> ", error);
+  }
+}
+
+/**
+ * Close database connection
+ */
+export async function SQL__close() {
   if (sqlite) {
     try {
-      const data = await sqlite.execute(query);
-      return data;
+      sqlite.close();
+      sqlite = null;
+      if (config.debug) console.log("SQLite: Database closed.");
     } catch (error) {
-      if (config.debug) {
-        console.log("SQL__query error >> ", error);
-      }
-    }
-  } else {
-    if (config.debug) {
-      console.log("SQL__query error >> Database not initialized.");
+      console.error("SQLite: Close error >> ", error);
     }
   }
 }
