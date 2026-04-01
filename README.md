@@ -72,7 +72,7 @@ const config = {
    | SQL__transaction(...) | for execute multiple operations in one transaction (Bulk) | Promise |
    | SQL__executeBatch(...) | for execute multiple raw queries efficiently | Promise |
    | SQL__close() | for close database connection | void |
-7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) file directly
+7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) or `.ts` file directly
 
 ## Sample Code
 
@@ -91,7 +91,7 @@ CREATE TABLE "users" (
 
 #### CREATE new TABLE USERS
 
-Before you can do something, make sure you already create the table. for create table in SQLite, you can use method `SQL_query` from `sqlite_helper.js`, example like this :
+Before you can do something, make sure you already create the table. for create table in SQLite, you can use method `SQL_query` from `sqlite_helper.js` (or `.ts`), example like this :
 
 ```javascript
 import { SQL__query } from "~/sqlite_helper";
