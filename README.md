@@ -47,7 +47,7 @@ const config = {
 };
 ```
 
-5. import file sql_helper.js on your module, like :
+5. import file `sqlite_helper` on your module, like :
    ```javascript
    import {
      SQL__select,
@@ -59,7 +59,7 @@ const config = {
      SQL__query,
    } from "~/sqlite_helper";
    ```
-6. Avaliable methode on `sql_helper.js`
+6. Avaliable methode on `sqlite_helper`
    | Method | Description | Return |
    |-------------------|-------------------------------------------------------------|--------|
    | SQL__select(...) | for get data from table | Array |
