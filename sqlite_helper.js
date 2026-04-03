@@ -1,9 +1,15 @@
-import { knownFolders, path, File } from "@nativescript/core";
+import {
+  knownFolders,
+  path,
+  File,
+  Folder,
+  Application,
+} from "@nativescript/core";
 import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
  * @Name       : SQLite Helper {N}
- * @Version    : 3.0 (Optimized for Bulk & Transactions)
+ * @Version    : 3.1 (Optimized for Bulk & Transactions)
  * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
  * @Author     : Kang Cahya (github.com/dyazincahya)
  * @Blog       : https://www.kang-cahya.com
@@ -26,13 +32,30 @@ const config = {
 };
 
 /**
- * Path database
- * @type {String}
+ * Get native database path using platform-specific APIs
+ * @param {string} dbName
+ * @returns {string} absolute native path
  */
-const dbPath = path.join(
-  config.paths.documentsFolder.path,
-  config.databaseName,
-);
+function getNativeDatabasePath(dbName) {
+  if (global.android) {
+    // Native path on Android (usually /data/data/<package>/databases/)
+    const context =
+      Application.android.context || Application.android.nativeApp;
+    const dbFile = context.getDatabasePath(dbName);
+    return dbFile.getAbsolutePath();
+  } else if (global.ios) {
+    // Standard documents folder for iOS
+    return path.join(knownFolders.documents().path, dbName);
+  }
+  // Fallback for other environments
+  return path.join(config.paths.documentsFolder.path, dbName);
+}
+
+/**
+ * Path database (Resolved during initialization)
+ * @type {String|null}
+ */
+let dbPath = null;
 
 /**
  * Variable sqlite instance
@@ -64,31 +87,57 @@ async function initializeDatabase() {
 
 function initInitPromise() {
   initPromise = (async () => {
-    if (!config.databaseName || config.databaseName === "YOUR_DATABASE_NAME.db") {
+    if (
+      !config.databaseName ||
+      config.databaseName === "YOUR_DATABASE_NAME.db"
+    ) {
       console.warn("SQLite: Database name is not defined or empty.");
       return null;
     }
 
     try {
+      // Lazy resolve the native database path
+      if (!dbPath) {
+        dbPath = getNativeDatabasePath(config.databaseName);
+      }
+
       const isFileDbExists = File.exists(dbPath);
       if (!isFileDbExists) {
+        // Find seed database in assets
         const assetsPath = knownFolders
           .currentApp()
           .getFolder(config.paths.assetsFolder).path;
-        const pathDbAssets = path.join(assetsPath, config.databaseName);
-        const fileDb = File.fromPath(pathDbAssets);
+        const seedPath = path.join(assetsPath, config.databaseName);
 
-        if (File.exists(pathDbAssets)) {
-          if (config.debug) console.log("SQLite: Copying database from assets...");
-          await fileDb.copy(dbPath);
+        if (File.exists(seedPath)) {
+          if (config.debug)
+            console.log(`SQLite: Seeding database from assets to ${dbPath}...`);
+
+          // Ensure destination folder exists (critical for Android /databases/ folder)
+          const destinationDir = path.dirname(dbPath);
+          if (!Folder.exists(destinationDir)) {
+            Folder.fromPath(destinationDir);
+          }
+
+          const seedFile = File.fromPath(seedPath);
+          await seedFile.copy(dbPath);
+
+          if (config.debug) console.log("SQLite: Seed copy successful.");
         } else {
-          if (config.debug) console.log("SQLite: No seed database found in assets, starting fresh.");
+          if (config.debug)
+            console.log(
+              "SQLite: No seed database found in assets. Starting with empty DB.",
+            );
         }
+      } else {
+        if (config.debug)
+          console.log("SQLite: Existing database found, skipping seed.");
       }
 
-      // Open database
+      // Open database using absolute native path
       sqlite = openOrCreate(dbPath);
-      if (config.debug) console.log("SQLite: Database opened at", dbPath);
+      if (config.debug)
+        console.log("SQLite: Database opened at native location:", dbPath);
 
       return sqlite;
     } catch (error) {
@@ -100,10 +149,10 @@ function initInitPromise() {
   })();
 }
 
-/* 
-  * MAIN CRUD FUNCTIONS
-  * --------------------------------
-*/
+/*
+ * MAIN CRUD FUNCTIONS
+ * --------------------------------
+ */
 
 /**
  * Perform a SELECT query
@@ -156,7 +205,11 @@ export async function SQL__insert(table, data = []) {
   try {
     // Current legacy format: [{field: 'name', value: 'val'}, ...]
     // If it's this format, we insert one row.
-    if (Array.isArray(data) && data.length > 0 && typeof data[0].field === "string") {
+    if (
+      Array.isArray(data) &&
+      data.length > 0 &&
+      typeof data[0].field === "string"
+    ) {
       const fields = data.map((item) => item.field).join(", ");
       const holders = data.map(() => "?").join(", ");
       const values = data.map((item) => item.value);
@@ -170,7 +223,10 @@ export async function SQL__insert(table, data = []) {
           const fields = entry.map((item) => item.field).join(", ");
           const holders = entry.map(() => "?").join(", ");
           const values = entry.map((item) => item.value);
-          await db.execute(`INSERT INTO ${table} (${fields}) VALUES (${holders})`, values);
+          await db.execute(
+            `INSERT INTO ${table} (${fields}) VALUES (${holders})`,
+            values,
+          );
         }
       });
     }
@@ -187,7 +243,12 @@ export async function SQL__insert(table, data = []) {
  * @param {string} conditionalQuery  - optional WHERE clause
  * @returns {Promise<void>}
  */
-export async function SQL__update(table, data = [], id = null, conditionalQuery = "") {
+export async function SQL__update(
+  table,
+  data = [],
+  id = null,
+  conditionalQuery = "",
+) {
   await initializeDatabase();
   if (!sqlite || !data.length) return;
 
@@ -206,9 +267,9 @@ export async function SQL__update(table, data = [], id = null, conditionalQuery 
 
 /**
  * Delete records
- * @param {string} table 
- * @param {number|string} id 
- * @param {string} conditionalQuery 
+ * @param {string} table
+ * @param {number|string} id
+ * @param {string} conditionalQuery
  * @returns {Promise<void>}
  */
 export async function SQL__delete(table, id = null, conditionalQuery = "") {
@@ -227,7 +288,7 @@ export async function SQL__delete(table, id = null, conditionalQuery = "") {
 
 /**
  * Truncate table and vacuum
- * @param {string} table 
+ * @param {string} table
  */
 export async function SQL__truncate(table) {
   await initializeDatabase();
@@ -243,14 +304,16 @@ export async function SQL__truncate(table) {
 
 /**
  * Drop Table
- * @param {string} table 
- * @param {boolean} ifExist 
+ * @param {string} table
+ * @param {boolean} ifExist
  */
 export async function SQL__dropTable(table, ifExist = false) {
   await initializeDatabase();
   if (!sqlite) return;
 
-  const query = ifExist ? `DROP TABLE IF EXISTS ${table}` : `DROP TABLE ${table}`;
+  const query = ifExist
+    ? `DROP TABLE IF EXISTS ${table}`
+    : `DROP TABLE ${table}`;
   try {
     await sqlite.execute(query);
   } catch (error) {
@@ -260,8 +323,8 @@ export async function SQL__dropTable(table, ifExist = false) {
 
 /**
  * Execute custom query
- * @param {string} query 
- * @param {any[]} values 
+ * @param {string} query
+ * @param {any[]} values
  * @returns {Promise<any>}
  */
 export async function SQL__query(query, values = []) {
