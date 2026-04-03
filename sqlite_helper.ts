@@ -1,9 +1,15 @@
-import { knownFolders, path, File } from "@nativescript/core";
+import {
+  knownFolders,
+  path,
+  File,
+  Folder,
+  Application,
+} from "@nativescript/core";
 import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
  * @Name       : SQLite Helper {N}
- * @Version    : 3.0 (Optimized for Bulk & Transactions)
+ * @Version    : 3.1 (Optimized for Bulk & Transactions)
  * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
  * @Author     : Kang Cahya (github.com/dyazincahya)
  * @Blog       : https://www.kang-cahya.com
@@ -16,7 +22,7 @@ export interface Config {
   databaseName: string;
   debug: boolean;
   paths: {
-    documentsFolder: any;
+    documentsFolder: Folder;
     assetsFolder: string;
   };
 }
@@ -39,12 +45,29 @@ const config: Config = {
 };
 
 /**
- * Path database
+ * Get native database path using platform-specific APIs
+ * @param dbName
+ * @returns absolute native path
  */
-const dbPath: string = path.join(
-  config.paths.documentsFolder.path,
-  config.databaseName,
-);
+function getNativeDatabasePath(dbName: string): string {
+  if (global.android) {
+    // Native path on Android (usually /data/data/<package>/databases/)
+    const context =
+      Application.android.context || Application.android.nativeApp;
+    const dbFile = context.getDatabasePath(dbName);
+    return dbFile.getAbsolutePath();
+  } else if (global.ios) {
+    // Standard documents folder for iOS
+    return path.join(knownFolders.documents().path, dbName);
+  }
+  // Fallback for other environments
+  return path.join(config.paths.documentsFolder.path, dbName);
+}
+
+/**
+ * Path database (Resolved during initialization)
+ */
+let dbPath: string | null = null;
 
 /**
  * Variable sqlite instance
@@ -59,54 +82,86 @@ let initPromise: Promise<any> | null = null;
 /**
  * Initialize database with singleton pattern and lock
  * @async
- * @returns {Promise<any>} sqlite instance
+ * @returns sqlite instance
  */
 async function initializeDatabase(): Promise<any> {
   if (sqlite) return sqlite;
+
+  // If initialization is already in progress, wait for it
   if (initPromise) return initPromise;
 
+  initInitPromise();
+  return initPromise;
+}
+
+function initInitPromise() {
   initPromise = (async () => {
-    if (!config.databaseName || config.databaseName === "YOUR_DATABASE_NAME.db") {
+    if (
+      !config.databaseName ||
+      config.databaseName === "YOUR_DATABASE_NAME.db"
+    ) {
       console.warn("SQLite: Database name is not defined or empty.");
       return null;
     }
 
     try {
+      // Lazy resolve the native database path
+      if (!dbPath) {
+        dbPath = getNativeDatabasePath(config.databaseName);
+      }
+
       const isFileDbExists = File.exists(dbPath);
       if (!isFileDbExists) {
+        // Find seed database in assets
         const assetsPath = knownFolders
           .currentApp()
           .getFolder(config.paths.assetsFolder).path;
-        const pathDbAssets = path.join(assetsPath, config.databaseName);
-        const fileDb = File.fromPath(pathDbAssets);
+        const seedPath = path.join(assetsPath, config.databaseName);
 
-        if (File.exists(pathDbAssets)) {
-          if (config.debug) console.log("SQLite: Copying database from assets...");
-          await fileDb.copy(dbPath);
+        if (File.exists(seedPath)) {
+          if (config.debug)
+            console.log(`SQLite: Seeding database from assets to ${dbPath}...`);
+
+          // Ensure destination folder exists (critical for Android /databases/ folder)
+          const destinationDir = path.join(dbPath, "..");
+          if (!Folder.exists(destinationDir)) {
+            Folder.fromPath(destinationDir);
+          }
+
+          const seedFile = File.fromPath(seedPath);
+          await seedFile.copy(dbPath);
+
+          if (config.debug) console.log("SQLite: Seed copy successful.");
         } else {
-          if (config.debug) console.log("SQLite: No seed database found in assets, starting fresh.");
+          if (config.debug)
+            console.log(
+              "SQLite: No seed database found in assets. Starting with empty DB.",
+            );
         }
+      } else {
+        if (config.debug)
+          console.log("SQLite: Existing database found, skipping seed.");
       }
 
+      // Open database using absolute native path
       sqlite = openOrCreate(dbPath);
-      if (config.debug) console.log("SQLite: Database opened at:", dbPath);
+      if (config.debug)
+        console.log("SQLite: Database opened at native location:", dbPath);
 
       return sqlite;
     } catch (error) {
-      console.error("SQLite: Initialization error >>", error);
+      console.error("SQLite: Initialization error >> ", error);
       throw error;
     } finally {
       initPromise = null;
     }
   })();
-
-  return initPromise;
 }
 
-/* 
-  * MAIN CRUD FUNCTIONS
-  * --------------------------------
-*/
+/*
+ * MAIN CRUD FUNCTIONS
+ * --------------------------------
+ */
 
 /**
  * Perform a SELECT query
@@ -127,7 +182,7 @@ export async function SQL__select<T = any>(
   try {
     return await sqlite.select(query);
   } catch (error) {
-    if (config.debug) console.error("SQL__select error >>", error);
+    if (config.debug) console.error("SQL__select error >> ", error);
     return [];
   }
 }
@@ -145,7 +200,7 @@ export async function SQL__selectRaw<T = any>(query: string): Promise<T[]> {
   try {
     return await sqlite.select(query);
   } catch (error) {
-    if (config.debug) console.error("SQL__selectRaw error >>", error);
+    if (config.debug) console.error("SQL__selectRaw error >> ", error);
     return [];
   }
 }
@@ -164,8 +219,13 @@ export async function SQL__insert(
   if (!sqlite || !data) return;
 
   try {
-    // Single row legacy format
-    if (Array.isArray(data) && data.length > 0 && typeof (data[0] as DataField).field === "string") {
+    // Current legacy format: [{field: 'name', value: 'val'}, ...]
+    // If it's this format, we insert one row.
+    if (
+      Array.isArray(data) &&
+      data.length > 0 &&
+      typeof (data[0] as DataField).field === "string"
+    ) {
       const row = data as DataField[];
       const fields = row.map((item) => item.field).join(", ");
       const holders = row.map(() => "?").join(", ");
@@ -180,12 +240,15 @@ export async function SQL__insert(
           const fields = row.map((item) => item.field).join(", ");
           const holders = row.map(() => "?").join(", ");
           const values = row.map((item) => item.value);
-          await db.execute(`INSERT INTO ${table} (${fields}) VALUES (${holders})`, values);
+          await db.execute(
+            `INSERT INTO ${table} (${fields}) VALUES (${holders})`,
+            values,
+          );
         }
       });
     }
   } catch (error) {
-    if (config.debug) console.error("SQL__insert error >>", error);
+    if (config.debug) console.error("SQL__insert error >> ", error);
   }
 }
 
@@ -215,15 +278,15 @@ export async function SQL__update(
   try {
     await sqlite.execute(query, values);
   } catch (error) {
-    if (config.debug) console.error("SQL__update error >>", error);
+    if (config.debug) console.error("SQL__update error >> ", error);
   }
 }
 
 /**
  * Delete records
- * @param table 
- * @param id 
- * @param conditionalQuery 
+ * @param table
+ * @param id
+ * @param conditionalQuery
  */
 export async function SQL__delete(
   table: string,
@@ -239,13 +302,13 @@ export async function SQL__delete(
   try {
     await sqlite.execute(query);
   } catch (error) {
-    if (config.debug) console.error("SQL__delete error >>", error);
+    if (config.debug) console.error("SQL__delete error >> ", error);
   }
 }
 
 /**
  * Truncate table and vacuum
- * @param table 
+ * @param table
  */
 export async function SQL__truncate(table: string): Promise<void> {
   await initializeDatabase();
@@ -255,14 +318,14 @@ export async function SQL__truncate(table: string): Promise<void> {
     await sqlite.execute(`DELETE FROM ${table}`);
     await sqlite.execute("VACUUM");
   } catch (error) {
-    if (config.debug) console.error("SQL__truncate error >>", error);
+    if (config.debug) console.error("SQL__truncate error >> ", error);
   }
 }
 
 /**
  * Drop Table
- * @param table 
- * @param ifExist 
+ * @param table
+ * @param ifExist
  */
 export async function SQL__dropTable(
   table: string,
@@ -271,18 +334,20 @@ export async function SQL__dropTable(
   await initializeDatabase();
   if (!sqlite) return;
 
-  const query = ifExist ? `DROP TABLE IF EXISTS ${table}` : `DROP TABLE ${table}`;
+  const query = ifExist
+    ? `DROP TABLE IF EXISTS ${table}`
+    : `DROP TABLE ${table}`;
   try {
     await sqlite.execute(query);
   } catch (error) {
-    if (config.debug) console.error("SQL__dropTable error >>", error);
+    if (config.debug) console.error("SQL__dropTable error >> ", error);
   }
 }
 
 /**
  * Execute custom query
- * @param query 
- * @param values 
+ * @param query
+ * @param values
  */
 export async function SQL__query(
   query: string,
@@ -294,7 +359,7 @@ export async function SQL__query(
   try {
     return await sqlite.execute(query, values);
   } catch (error) {
-    if (config.debug) console.error("SQL__query error >>", error);
+    if (config.debug) console.error("SQL__query error >> ", error);
   }
 }
 
@@ -311,7 +376,7 @@ export async function SQL__transaction<T = any>(
   try {
     return await sqlite.transaction(callback);
   } catch (error) {
-    if (config.debug) console.error("SQL__transaction error >>", error);
+    if (config.debug) console.error("SQL__transaction error >> ", error);
     throw error;
   }
 }
@@ -327,6 +392,7 @@ export async function SQL__executeBatch(
   if (!sqlite) return;
 
   try {
+    // Check plugin support for executeBatch or fallback to transaction
     if (typeof sqlite.executeBatch === "function") {
       return await sqlite.executeBatch(queries);
     } else {
@@ -341,7 +407,7 @@ export async function SQL__executeBatch(
       });
     }
   } catch (error) {
-    if (config.debug) console.error("SQL__executeBatch error >>", error);
+    if (config.debug) console.error("SQL__executeBatch error >> ", error);
   }
 }
 
@@ -355,7 +421,7 @@ export async function SQL__close(): Promise<void> {
       sqlite = null;
       if (config.debug) console.log("SQLite: Database closed.");
     } catch (error) {
-      console.error("SQLite: Close error >>", error);
+      console.error("SQLite: Close error >> ", error);
     }
   }
 }
