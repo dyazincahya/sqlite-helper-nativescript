@@ -9,7 +9,7 @@ import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
  * @Name       : SQLite Helper {N}
- * @Version    : 4.0 (Soft Delete)
+ * @Version    : 4.0 (Soft-Delete & Bulk Support)
  * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
  * @Author     : Kang Cahya (github.com/dyazincahya)
  * @Blog       : https://www.kang-cahya.com
