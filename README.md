@@ -1,14 +1,10 @@
 # SQLite Helper Nativescript
 
-This `helper` can helping you when you using SQLite in Nativescript
+This `helper` can helping you when you using SQLite in Nativescript. It provides high-level CRUD operations, Soft Delete management, and optimized bulk transactions.
 
 ## Dependency
 
 Before you using this helper, you must be install plugin [nativescript-community/sqlite](https://github.com/nativescript-community/sqlite), cause this helper running on this plugin.
-
-## Changelogs
-
-See full changelogs [here](https://github.com/dyazincahya/sqlite-helper-nativescript/releases)
 
 ## Requirements
 
@@ -25,214 +21,171 @@ NSProject/
 │   └── assets/
 │       └── db/
 │           └── your_database.db      <-- Seed database (optional)
-│   └── sqlite_helper.js              <-- For JS projects
-│   └── sqlite_helper.ts              <-- For TS projects (recomended)
+│   └── database/
+│       └── sqlite-helper.js          <-- For JS projects
+│       └── sqlite_helper.ts          <-- For TS projects (recommended)
 ```
 
 ## Instructions
 
-1. Download [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) (or the `.ts` version) and save it to your `app` folder.
+1. Download `sqlite-helper.js` (or the `.ts` version) and save it to your `app/database` folder.
 2. (Optional) Create a seed database using [SQLite Browser](https://sqlitebrowser.org).
 3. Place your `.db` file in `app/assets/db/`.
 4. Open the helper file and update the `config` object:
 
 ```javascript
 const config = {
-  databaseName: "my_app.db", // Your actual database filename
-  debug: true,               // Enable for detailed logs in console
+  databaseName: "my_app.db", 
+  debug: true, 
+  softDelete: true, // Enable Soft Delete (is_deleted column required)
   paths: {
     documentsFolder: knownFolders.documents(),
-    assetsFolder: "assets/db", // Where the helper looks for the seed file
+    assetsFolder: "assets/db",
   },
 };
 ```
 
-5. import file `sqlite_helper` on your module, like :
-   ```javascript
-   import {
-     SQL__select,
-     SQL__selectRaw,
-     SQL__insert,
-     SQL__update,
-     SQL__delete,
-     SQL__truncate,
-     SQL__query,
-   } from "~/sqlite_helper";
-   ```
-6. Avaliable methode on `sqlite_helper`
-   | Method | Description | Return |
-   |-------------------|-------------------------------------------------------------|--------|
-   | SQL__select(...) | for get data from table | Array |
-   | SQL__selectRaw(...) | for get data from table, same like `SQL_select`, but here you can execute simple or advance query, like JOIN Query or etc | Array |
-   | SQL__insert(...) | for insert data to table (supports single row or bulk array) | void |
-   | SQL__update(...) | for update data to table | void |
-   | SQL__delete(...) | for delete data row from table | void |
-   | SQL__truncate(...) | for clear all data on the table | void |
-   | SQL__query(...) | for execute raw query like Create new Table or Etc | ? |
-   | SQL__transaction(...) | for execute multiple operations in one transaction (Bulk) | Promise |
-   | SQL__executeBatch(...) | for execute multiple raw queries efficiently | Promise |
-   | SQL__close() | for close database connection | void |
-7. For details, you can look at the [sqlite_helper.js](https://github.com/dyazincahya/sqlite-helper-nativescript/blob/main/sqlite_helper.js) or `.ts` file directly
+### Soft Delete Feature
+When `softDelete: true` is enabled:
+- **SELECT**: Automatically appends `WHERE is_deleted = 0`.
+- **INSERT/UPDATE**: Automatically ensures `is_deleted = 0` (Active).
+- **DELETE**: Instead of physical deletion, it performs an update: `SET is_deleted = 1`.
+
+> [!IMPORTANT]
+> To use Soft Delete, every table in your database must have an `is_deleted` column (INTEGER, default 0).
+
+## Available Methods
+
+| Method | Description | Return |
+|-------------------|-------------------------------------------------------------|--------|
+| SQL__select(...) | Get data from table (Auto filter `is_deleted=0`) | Array |
+| SQL__selectRaw(...) | Execute advance query (JOIN, etc.) | Array |
+| SQL__insert(...) | Insert data (Single row or bulk Array) | void |
+| SQL__update(...) | Update data (Supports single ID or Array ID) | void |
+| SQL__delete(...) | Soft Delete (if enabled) or Physical Delete | void |
+| SQL__hardDelete(...) | **Physical Delete** ignoring soft delete setting | void |
+| SQL__restore(...) | Restore soft-deleted records (`is_deleted = 0`) | void |
+| SQL__truncate(...) | Clear all data on the table | void |
+| SQL__query(...) | Execute raw query like Create Table | ? |
+| SQL__transaction(...) | Transaction with **Helper Object** (Soft Delete Aware) | Promise |
+| SQL__transactionNative(...) | Transaction with **Native DB Handle** (Raw SQL) | Promise |
+| SQL__executeBatch(...) | Batch operations with **Command Objects** | Promise |
+| SQL__executeBatchNative(...) | Batch operations with **Raw SQL Strings** | Promise |
+
+---
 
 ## Sample Code
 
-### TABLE
-
-Assummed I have a **users** table like this :
-
-```sql
-CREATE TABLE "users" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"fullname"	TEXT NOT NULL,
-	"about"	TEXT DEFAULT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT)
-)
-```
-
-#### CREATE new TABLE USERS
-
-Before you can do something, make sure you already create the table. for create table in SQLite, you can use method `SQL_query` from `sqlite_helper.js` (or `.ts`), example like this :
-
+### Bulk Delete (Array of IDs)
+All delete and update functions now support passing an array of IDs.
 ```javascript
-import { SQL__query } from "~/sqlite_helper";
+import { SQL__delete } from "~/database/sqlite-helper";
 
-SQL__query(`CREATE TABLE IF NOT EXISTS "users" (
-	"id"	INTEGER NOT NULL UNIQUE,
-	"fullname"	TEXT NOT NULL,
-	"about"	TEXT DEFAULT NULL,
-	PRIMARY KEY("id" AUTOINCREMENT)
-)`);
+// Delete multiple IDs at once (Soft Delete if enabled)
+await SQL__delete("users", [1, 5, 22]);
 ```
 
-When you make create table query, make sure you use `IF NOT EXISTS` in your query. This is useful to avoid double execution of your query.
-
-#### GET all USERS
-
-```sql
-SQL__select(tableName)
-```
-
-I want to get all user data from the table
-
+### Select Data
 ```javascript
-import { SQL__select } from "~/sqlite_helper";
+import { SQL__select, SQL__selectRaw } from "~/database/sqlite-helper";
 
-SQL__select("users").then((res) => {
-  console.log(res);
-  console.log(res.length);
+// Get all active users (auto filter is_deleted=0)
+const users = await SQL__select("users");
+
+// Get with condition
+const admins = await SQL__select("users", "id, fullname", "WHERE role = 'admin' AND age > 20");
+
+// Raw Select with JOIN
+const query = `
+  SELECT b.id, b.kasbon_name, u.fullname 
+  FROM bukukasbon b
+  JOIN users u ON b.user_id = u.id
+  WHERE b.is_deleted = 0
+`;
+const results = await SQL__selectRaw(query);
+```
+
+### Update Data (Single & Bulk)
+```javascript
+import { SQL__update } from "~/database/sqlite-helper";
+
+// Update single ID
+await SQL__update("users", [{ field: "fullname", value: "New Name" }], 1);
+
+// Update multiple IDs (Bulk)
+await SQL__update("users", [{ field: "role", value: "moderator" }], [5, 6, 7]);
+
+// Update with custom condition
+await SQL__update("users", [{ field: "status", value: "inactive" }], null, "WHERE last_login < '2023-01-01'");
+```
+
+### Restore & Hard Delete
+```javascript
+import { SQL__restore, SQL__hardDelete } from "~/database/sqlite-helper";
+
+// Restore deleted users
+await SQL__restore("users", [10, 11]);
+
+// Permanently remove data
+await SQL__hardDelete("logs", null, "WHERE created_at < '2023-01-01'");
+```
+
+### High-level Transaction (Soft Delete Aware)
+The new `SQL__transaction` provides a `helper` object that has the same API as the main functions.
+```javascript
+import { SQL__transaction } from "~/database/sqlite-helper";
+
+await SQL__transaction(async (helper) => {
+  // All these follow Soft Delete logic automatically
+  await helper.insert("users", [{ field: "fullname", value: "New User" }]);
+  await helper.delete("old_table", 5);
+  
+  const activeUsers = await helper.select("users");
 });
 ```
 
-#### GET USER where FULLNAME is JOHN DUO
-
-```sql
-SQL__select(tableName, fields, conditionalQuery)
-```
-
-I want to get all user data from table by fullname is john duo
-
+### Native Transaction (Raw SQL)
+Use this if you need full control over the SQL strings.
 ```javascript
-import { SQL__select } from "~/sqlite_helper";
+import { SQL__transactionNative } from "~/database/sqlite-helper";
 
-SQL__select("users", "*", "WHERE fullname='john duo'").then((res) => {
-  console.log(res);
-  console.log(res.length);
+await SQL__transactionNative(async (db) => {
+  await db.execute("DELETE FROM users WHERE id = ?", [1]); 
 });
 ```
 
-#### CREATE new USER
-
-```sql
-SQL__insert(tableName, data)
-```
-
-I want to create new user with fullname is Kang Cahya and about is Designer
-
+### Object-based Batch
+Execute multiple operations efficiently using an array of objects.
 ```javascript
-import { SQL__insert } from "~/sqlite_helper";
+import { SQL__executeBatch } from "~/database/sqlite-helper";
 
-SQL__insert("users", [
-  { field: "fullname", value: "Kang Cahya" },
-  { field: "about", value: "Designer" },
+await SQL__executeBatch([
+  { type: "insert", table: "users", data: [{ field: "name", value: "Budi" }] },
+  { type: "delete", table: "users", id: 10 },
+  { type: "restore", table: "products", id: [50, 51] }
 ]);
 ```
 
-#### UPDATE Data by ID
-
-I want to update the `about` field for the user with ID `3`.
-
+### Native Batch (Raw SQL)
 ```javascript
-import { SQL__update } from "~/sqlite_helper";
+import { SQL__executeBatchNative } from "~/database/sqlite-helper";
 
-SQL__update("users", [{ field: "about", value: "Tester" }], 3);
+await SQL__executeBatchNative([
+  "DELETE FROM logs WHERE level = 'debug'",
+  ["INSERT INTO users (fullname, is_deleted) VALUES (?, ?)", ["Native User", 0]],
+  "VACUUM"
+]);
 ```
 
-#### UPDATE Data with WHERE Condition
-
-I want to update the `about` field where the ID is `3` using a custom string condition.
-
+### Bulk Insert (Optimized)
+Pass an array of objects to `SQL__insert` for fast transactional insertion.
 ```javascript
-import { SQL__update } from "~/sqlite_helper";
-
-SQL__update(
-  "users",
-  [{ field: "about", value: "Tester" }],
-  null,
-  "WHERE id='3'",
-);
-```
-
-#### TRANSACTION (For Bulk CRUD)
-
-Use transactions when you need to execute multiple write operations (Insert/Update/Delete) as a single atomic unit. This is **much faster** than individual calls.
-
-```javascript
-import { SQL__transaction } from "~/sqlite_helper";
-
-await SQL__transaction(async (db) => {
-  // All these operations happen in ONE transaction
-  // 'db' provides the standard SQLite plugin API (execute, select, etc)
-  await db.execute("INSERT INTO users (fullname) VALUES (?)", ["User 1"]);
-  await db.execute("INSERT INTO users (fullname) VALUES (?)", ["User 2"]);
-  await db.execute("UPDATE users SET about='Batch' WHERE fullname LIKE 'User%'");
-});
-```
-
-#### BULK INSERT (Optimized)
-
-The `SQL__insert` method is smart: if you pass an array of row objects, it will automatically use a transaction internally for high performance.
-
-```javascript
-import { SQL__insert } from "~/sqlite_helper";
+import { SQL__insert } from "~/database/sqlite-helper";
 
 const manyUsers = [
-  [{ field: "fullname", value: "User A" }, { field: "about", value: "A" }],
-  [{ field: "fullname", value: "User B" }, { field: "about", value: "B" }],
-  [{ field: "fullname", value: "User C" }, { field: "about", value: "C" }]
+  [{ field: "fullname", value: "User A" }],
+  [{ field: "fullname", value: "User B" }]
 ];
 
-// This will automatically use a transaction internally
 await SQL__insert("users", manyUsers);
 ```
-
-#### EXECUTE BATCH
-
-```javascript
-import { SQL__executeBatch } from "~/sqlite_helper";
-
-const queries = [
-  "DELETE FROM users WHERE archive=1",
-  ["INSERT INTO users (fullname) VALUES (?)", ["User X"]],
-  "VACUUM"
-];
-
-await SQL__executeBatch(queries);
-```
-
-## My Nativescript App using SQLite Helper
-
-[WA Sender](https://github.com/x-labs-86/wa-sender)
-
-## More info about Sqlite
-
-[Sqlite Tutorial by Tutorialspoint](https://www.tutorialspoint.com/sqlite/index.htm)
