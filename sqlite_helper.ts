@@ -9,7 +9,7 @@ import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
  * @Name       : SQLite Helper {N}
- * @Version    : 3.1 (Optimized Native SQLite Handling)
+ * @Version    : 3.2 (Optimized Native SQLite Handling)
  * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
  * @Author     : Kang Cahya (github.com/dyazincahya)
  * @Blog       : https://www.kang-cahya.com
@@ -374,7 +374,9 @@ export async function SQL__transaction<T = any>(
   if (!sqlite) return;
 
   try {
-    return await sqlite.transaction(callback);
+    return await sqlite.transaction(async (cancel) => {
+      return await callback(sqlite, cancel);
+    });
   } catch (error) {
     if (config.debug) console.error("SQL__transaction error >> ", error);
     throw error;
