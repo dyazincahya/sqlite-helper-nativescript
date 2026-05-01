@@ -348,7 +348,9 @@ export async function SQL__transaction(callback) {
   if (!sqlite) return;
 
   try {
-    return await sqlite.transaction(callback);
+    return await sqlite.transaction(async (cancel) => {
+      return await callback(sqlite, cancel);
+    });
   } catch (error) {
     if (config.debug) console.error("SQL__transaction error >> ", error);
     throw error;
