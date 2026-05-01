@@ -9,7 +9,7 @@ import { openOrCreate } from "@nativescript-community/sqlite";
 
 /*
  * @Name       : SQLite Helper {N}
- * @Version    : 3.2 (Optimized Native SQLite Handling)
+ * @Version    : 3.2
  * @Repo       : https://github.com/dyazincahya/sqlite-helper-nativescript
  * @Author     : Kang Cahya (github.com/dyazincahya)
  * @Blog       : https://www.kang-cahya.com
